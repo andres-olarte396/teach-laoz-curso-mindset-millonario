@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulador: La Bola de Nieve del Dinero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy-1: #1B3A6B;
+    --navy-2: #2A5298;
+    --amber: #F59E0B;
+    --text: #0F172A;
+    --text-muted: #475569;
+    --bg: #F8FAFC;
+    --card-bg: #FFFFFF;
+    --border: #E2E8F0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .header {
+    background: linear-gradient(135deg, var(--navy-1) 0%, var(--navy-2) 100%);
+    color: white;
+    padding: 32px 20px;
+    text-align: center;
+  }
+  .header h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    margin: 0 0 8px;
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+  }
+  .header p {
+    margin: 0;
+    color: #DCE7F5;
+    font-size: 1.05rem;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+  .card h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    margin-top: 0;
+    color: var(--navy-1);
+    font-size: 1.3rem;
+  }
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .control label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .control .value {
+    color: var(--amber);
+    font-weight: 700;
+  }
+  .control input[type="range"] {
+    width: 100%;
+    accent-color: var(--amber);
+  }
+  .resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .resultado-tile {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+  }
+  .resultado-tile.destacado {
+    border-color: var(--amber);
+    background: #FFFBEB;
+  }
+  .resultado-tile .etiqueta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .resultado-tile .monto {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--navy-1);
+  }
+  .resultado-tile.destacado .monto { color: #B45309; }
+  #chart-container { width: 100%; overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+  th:first-child, td:first-child { text-align: center; }
+  th {
+    background: var(--navy-1);
+    color: white;
+    position: sticky;
+    top: 0;
+  }
+  .tabla-scroll { max-height: 320px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); }
+  .nota {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>❄️ La Bola de Nieve del Dinero</h1>
+    <p>Mueve los controles y descubre cómo crece tu dinero con el interés compuesto</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>1. Ajusta tu plan</h2>
+      <div class="control-grid">
+        <div class="control">
+          <label for="inicial">Con cuánto empiezas: <span class="value" id="inicial-valor">$1,000</span></label>
+          <input type="range" id="inicial" min="100" max="10000" step="100" value="1000" />
+        </div>
+        <div class="control">
+          <label for="mensual">Cuánto guardas cada mes: <span class="value" id="mensual-valor">$100</span></label>
+          <input type="range" id="mensual" min="50" max="2000" step="50" value="100" />
+        </div>
+        <div class="control">
+          <label for="tasa">Ganancia estimada al año: <span class="value" id="tasa-valor">10%</span></label>
+          <input type="range" id="tasa" min="5" max="15" step="1" value="10" />
+        </div>
+        <div class="control">
+          <label for="plazo">Cuántos años vas a esperar: <span class="value" id="plazo-valor">20 años</span></label>
+          <input type="range" id="plazo" min="5" max="40" step="1" value="20" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Esto es lo que pasa con tu dinero</h2>
+      <div class="resultados">
+        <div class="resultado-tile">
+          <div class="etiqueta">💰 Lo que tú pusiste de tu bolsillo</div>
+          <div class="monto" id="total-aportado">$0</div>
+        </div>
+        <div class="resultado-tile destacado">
+          <div class="etiqueta">❄️ Tu bola de nieve al final</div>
+          <div class="monto" id="valor-final">$0</div>
+        </div>
+        <div class="resultado-tile">
+          <div class="etiqueta">🎁 Lo que ganaste sin trabajar</div>
+          <div class="monto" id="ganancia">$0</div>
+        </div>
+      </div>
+      <p class="nota">"Lo que ganaste sin trabajar" es dinero que el interés compuesto generó por sí solo, solo por darle tiempo.</p>
+    </div>
+
+    <div class="card">
+      <h2>3. Compara: lo que pusiste vs. lo que tienes</h2>
+      <div id="chart-container">
+        <svg id="chart" width="100%" height="220" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>4. Cómo crece año a año</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr><th>Año</th><th>Total aportado</th><th>Valor de la bola de nieve</th></tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const inicialInput = document.getElementById('inicial');
+  const mensualInput = document.getElementById('mensual');
+  const tasaInput = document.getElementById('tasa');
+  const plazoInput = document.getElementById('plazo');
+
+  function formatoMoneda(valor) {
+    return '$' + Math.round(valor).toLocaleString('es-CO');
+  }
+
+  // Interes compuesto con aportes mensuales al final de cada mes (anualidad ordinaria).
+  function calcular(inicial, aporteMensual, tasaAnual, anios) {
+    const tasaMensual = tasaAnual / 100 / 12;
+    const meses = anios * 12;
+    let saldo = inicial;
+    let aportado = inicial;
+    const porAnio = [];
+
+    for (let mes = 1; mes <= meses; mes++) {
+      saldo = saldo * (1 + tasaMensual) + aporteMensual;
+      aportado += aporteMensual;
+      if (mes % 12 === 0) {
+        porAnio.push({ anio: mes / 12, aportado, saldo });
+      }
+    }
+
+    return { valorFinal: saldo, totalAportado: aportado, porAnio };
+  }
+
+  function dibujarGrafico(totalAportado, valorFinal) {
+    const svg = document.getElementById('chart');
+    const maxValor = Math.max(totalAportado, valorFinal, 1);
+    const escala = 160 / maxValor;
+    const alturaAportado = totalAportado * escala;
+    const alturaFinal = valorFinal * escala;
+
+    svg.innerHTML = `
+      <text x="110" y="20" text-anchor="middle" font-family="Inter" font-size="13" fill="#475569">Lo que pusiste</text>
+      <rect x="60" y="${200 - alturaAportado}" width="100" height="${alturaAportado}" fill="#94A3B8" rx="4"></rect>
+      <text x="110" y="${195 - alturaAportado}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="13" fill="#1B3A6B">${formatoMoneda(totalAportado)}</text>
+
+      <text x="440" y="20" text-anchor="middle" font-family="Inter" font-size="13" fill="#475569">Tu bola de nieve</text>
+      <rect x="390" y="${200 - alturaFinal}" width="100" height="${alturaFinal}" fill="#F59E0B" rx="4"></rect>
+      <text x="440" y="${195 - alturaFinal}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="13" fill="#B45309">${formatoMoneda(valorFinal)}</text>
+
+      <line x1="40" y1="200" x2="560" y2="200" stroke="#CBD5E1" stroke-width="2"></line>
+    `;
+  }
+
+  function dibujarTabla(porAnio) {
+    const tbody = document.getElementById('tabla-body');
+    tbody.innerHTML = porAnio
+      .map((fila) => `<tr><td>${fila.anio}</td><td>${formatoMoneda(fila.aportado)}</td><td>${formatoMoneda(fila.saldo)}</td></tr>`)
+      .join('');
+  }
+
+  function actualizar() {
+    const inicial = Number(inicialInput.value);
+    const mensual = Number(mensualInput.value);
+    const tasa = Number(tasaInput.value);
+    const plazo = Number(plazoInput.value);
+
+    document.getElementById('inicial-valor').textContent = formatoMoneda(inicial);
+    document.getElementById('mensual-valor').textContent = formatoMoneda(mensual);
+    document.getElementById('tasa-valor').textContent = tasa + '%';
+    document.getElementById('plazo-valor').textContent = plazo + ' años';
+
+    const { valorFinal, totalAportado, porAnio } = calcular(inicial, mensual, tasa, plazo);
+
+    document.getElementById('total-aportado').textContent = formatoMoneda(totalAportado);
+    document.getElementById('valor-final').textContent = formatoMoneda(valorFinal);
+    document.getElementById('ganancia').textContent = formatoMoneda(valorFinal - totalAportado);
+
+    dibujarGrafico(totalAportado, valorFinal);
+    dibujarTabla(porAnio);
+  }
+
+  [inicialInput, mensualInput, tasaInput, plazoInput].forEach((input) => input.addEventListener('input', actualizar));
+  actualizar();
+</script>
+</body>
+</html>
